@@ -1,6 +1,39 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import * as path from 'path';
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
+import { MyAPI } from './@types/MyAPI';
+import * as fs from 'fs';
+import { registerIpcMainHandler } from './IpcProxy';
+
+class MyApiServer implements MyAPI {
+  mainWindow: BrowserWindow;
+
+  constructor(mainWindow: BrowserWindow) {
+    this.mainWindow = mainWindow;
+  }
+
+  async openDialog() {
+    const dirPath = await dialog
+      .showOpenDialog(this.mainWindow, {
+        properties: ['openDirectory'],
+      })
+      .then((result) => {
+        if (result.canceled) return;
+        return result.filePaths[0];
+      })
+      .catch((err) => console.log(err));
+
+    if (!dirPath) return;
+
+    return fs.promises
+      .readdir(dirPath, { withFileTypes: true })
+      .then((dirents) =>
+        dirents
+          .filter((dirent) => dirent.isFile())
+          .map(({ name }) => path.join(dirPath, name)),
+      );
+  }
+};
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -11,6 +44,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+
+  const myApi = new MyApiServer(win);
+
+  registerIpcMainHandler<MyAPI>('my-api', myApi);
 
   if (app.isPackaged) {
     // 'build/index.html'

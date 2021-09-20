@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+const { myAPI } = window;
+
 function App() {
+  const [files, setFiles] = useState<string[]>([]);
+  const [buttonBusy, setButtonBusy] = useState(false);
+
   return (
     <div className="App">
       <header className="App-header">
@@ -18,6 +23,21 @@ function App() {
         >
           Learn React
         </a>
+        <button disabled={buttonBusy} onClick={async () => {
+          setButtonBusy(true);
+          const files = await myAPI.openDialog();
+          if (Array.isArray(files)) {
+            setFiles(files);
+          } else {
+            setFiles([]);
+          }
+          setButtonBusy(false);
+        }} >open dialog</button>
+        <ul>
+          {files.map(file => (
+            <li key={file}>{file}</li>
+          ))}
+        </ul>
       </header>
     </div>
   );
