@@ -1,4 +1,5 @@
 import { contextBridge, ipcMain, ipcRenderer } from "electron";
+import { createProxyObjectFromTemplate } from "../src/createProxyObjectFromTemplate";
 
 /**
  * main processから呼ぶことで、ipcMainに目的のinterface Tを実装したクラスオブジェクトをハンドラとして登録する。
@@ -6,18 +7,10 @@ import { contextBridge, ipcMain, ipcRenderer } from "electron";
  * @param target 目的のinterfaceを実装した処理クラスのインスタンス
  */
 export function registerIpcMainHandler<T>(channel: string, target: T): void {
-  const o = Object.getOwnPropertyNames(Object.getPrototypeOf(target))
-    .filter(key => key !== 'constructor')
-    .reduce<{ [key: string]: (...args: unknown[]) => unknown; }>((acc, cur) => {
-      const t = target as unknown as { [key: string]: (...args: unknown[]) => unknown };
-      if (typeof t[cur] === 'function') {
-        acc[cur] = t[cur];
-      }
-      return acc;
-    }, {});
+  const o = createProxyObjectFromTemplate(target as T, (key, fn) => fn);
 
-  ipcMain.handle(channel, async (event, name: string, ...args: unknown[]) => {
-    if (!o[name] === undefined) {
+  ipcMain.handle(channel, async (event, name: keyof T, ...args: unknown[]) => {
+    if (o[name] === undefined) {
       throw new Error(`${name} is not a function`);
     }
     return o[name].apply(target, args);
@@ -31,16 +24,7 @@ export function registerIpcMainHandler<T>(channel: string, target: T): void {
  * @returns contextBridge.exposeInMainWorld の第2引数に与えるオブジェクト
  */
 export function createIpcRendererProxy<T>(channel: string, from: T): T {
-  const o = Object.getOwnPropertyNames(Object.getPrototypeOf(from))
-    .filter(key => key !== 'constructor')
-    .reduce<{ [key: string]: (...args: unknown[]) => unknown }>((acc, cur) => {
-      if (typeof (from as unknown as { [key: string]: unknown })[cur] === 'function') {
-        acc[cur] = (...args: unknown[]) => ipcRenderer.invoke(channel, cur, ...args);
-      }
-      return acc;
-    }, {});
-
-  return o as unknown as T;
+  return createProxyObjectFromTemplate<T, unknown>(from, (cur) => (...args: unknown[]) => ipcRenderer.invoke(channel, cur, ...args)) as T;
 }
 
 /**

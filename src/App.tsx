@@ -32,10 +32,10 @@ function App() {
             setFiles([]);
           }
           setButtonBusy(false);
-        }} >open dialog</button>
+        }} data-testid="open-dialog">open dialog</button>
         <ul>
-          {files.map(file => (
-            <li key={file}>{file}</li>
+          {files.map((file, index) => (
+            <li key={file} data-testid={`file${index}`}>{file}</li>
           ))}
         </ul>
       </header>

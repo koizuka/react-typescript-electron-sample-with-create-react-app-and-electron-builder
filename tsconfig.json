@@ -26,6 +26,6 @@
   },
   "include": [
     "src",
-    "electron/@types"
+    "electron/@types",
   ]
 }
