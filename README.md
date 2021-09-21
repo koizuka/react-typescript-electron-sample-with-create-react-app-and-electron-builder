@@ -1,197 +1,169 @@
 React-TypeScript-Electron sample with Create React App and Electron Builder
 ===========================================================================
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app) with `--template typescript`option.
+Forked from https://github.com/yhirose/react-typescript-electron-sample-with-create-react-app-and-electron-builder.
 
-On the top of it, the following features have been added with realatively small changes:
+MyAPI.openDialog is from https://github.com/sprout2000/electron-react-ts.
 
-* TypeScript supports for Electron main process source code
-* Hot-relaod support for Electron app
-* Electron Bulder support
+## Introduction
+2021/9/22 現在,  Electron 14 には対応する Spectron が無いので、Spectronなしに test をなるべく書ける環境が欲しくて探したところ、 create-react-app の利便性をそのままに Electron を開発できる作品を見つけた。しかし contextBridge を介して main process と通信する仕組みがあるコードをテストする方法が提供されていなかったので、その機能を追加した。
 
-## Available Scripts in addition to the existing ones
+## Changes from upstream
+* 簡単な定義で main processで実行する関数群を中継するオブジェクトを global `window` などに注入できるようにする IpcProxy を追加。テスト用のmockも提供する。デモ用に `MyAPI.openDialog` を定義。
+* use npm-run-all in `yarn electron:dev`.
 
-### `npm run electron:dev`
+## Example code
 
-Runs the Electron app in the development mode.
-
-The Electron app will reload if you make edits in the `electron` directory.<br>
-You will also see any lint errors in the console.
-
-### `npm run electron:build`
-
-Builds the Electron app package for production to the `dist` folder.
-
-Your Electron app is ready to be distributed!
-
-## Project directory structure
-
-```bash
-my-app/
-├── package.json
-│
-## render process
-├── tsconfig.json
-├── public/
-├── src/
-│
-## main process
-├── electron/
-│   ├── main.ts
-│   └── tsconfig.json
-│
-## build output
-├── build/
-│   ├── index.html
-│   ├── static/
-│   │   ├── css/
-│   │   └── js/
-│   │
-│   └── electron/
-│      └── main.js
-│
-## distribution packges
-└── dist/
-    ├── mac/
-    │   └── my-app.app
-    └── my-app-0.1.0.dmg
+* electron/@types/MyAPI.d.ts
+```typescript
+export interface MyAPI {
+  openDialog: () => Promise<void | string[]>;
+}
 ```
 
-## Do it yourself from scratch
+* electron/@types/global.d.ts
+```typescript
+import { MyAPI } from "./MyAPI";
 
-### Generate a React project and install npm dependencies
-
-```bash
-create-react-app my-app --template typescript
-cd my-app
-yarn add @types/electron-devtools-installer electron-devtools-installer electron-is-dev electron-reload
-yarn add -D concurrently electron electron-builder wait-on cross-env
-```
-
-### Make Electron main process source file
-
-#### electron/tsconfig.json
-
-```json
-{
-  "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "sourceMap": true,
-    "strict": true,
-    "outDir": "../build", // Output transpiled files to build/electron/
-    "rootDir": "../",
-    "noEmitOnError": true,
-    "typeRoots": [
-      "node_modules/@types"
-    ]
+declare global {
+  interface Window {
+    myAPI: MyAPI;
   }
 }
 ```
 
-#### electron/main.ts
+* electron/preload.ts
+```typescript
+import { MyAPI } from "./@types/MyAPI";
+import { exposeProxyInMainWorld } from './IpcProxy';
+import { MyAPITemplate } from "./MyAPITemplate";
 
-```ts
-import { app, BrowserWindow } from 'electron';
-import * as path from 'path';
-import * as isDev from 'electron-is-dev';
-import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
+exposeProxyInMainWorld<MyAPI>('myAPI', 'my-api', new MyAPITemplate());
+```
 
-let win: BrowserWindow | null = null;
+* electron/MyAPITemplate.ts
+```typescript
+import { MyAPI } from "./@types/MyAPI";
 
-function createWindow() {
-  win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true
-    }
-  })
+export class MyAPITemplate implements MyAPI {
+  private dontCallMe = new Error("don't call me");
 
-  if (isDev) {
-    win.loadURL('http://localhost:3000/index.html');
-  } else {
-    // 'build/index.html'
-    win.loadURL(`file://${__dirname}/../index.html`);
-  }
-
-  win.on('closed', () => win = null);
-
-  // Hot Reloading
-  if (isDev) {
-    // 'node_modules/.bin/electronPath'
-    require('electron-reload')(__dirname, {
-      electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
-      forceHardReset: true,
-      hardResetMethod: 'exit'
-    });
-  }
-
-  // DevTools
-  installExtension(REACT_DEVELOPER_TOOLS)
-    .then((name) => console.log(`Added Extension:  ${name}`))
-    .catch((err) => console.log('An error occurred: ', err));
-
-  if (isDev) {
-    win.webContents.openDevTools();
-  }
+  openDialog(): Promise<void> { throw this.dontCallMe; }
 }
+```
 
-app.on('ready', createWindow);
+* electron/main.ts
+```typescript
+class MyApiServer implements MyAPI {
+  mainWindow: BrowserWindow;
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
+  constructor(mainWindow: BrowserWindow) {
+    this.mainWindow = mainWindow;
   }
-});
 
-app.on('activate', () => {
-  if (win === null) {
-    createWindow();
+  async openDialog() {
+    const dirPath = await dialog
+      .showOpenDialog(this.mainWindow, {
+        properties: ['openDirectory'],
+      })
+      .then((result) => {
+        if (result.canceled) return;
+        return result.filePaths[0];
+      })
+      .catch((err) => console.log(err));
+
+    if (!dirPath) return;
+
+    return fs.promises
+      .readdir(dirPath, { withFileTypes: true })
+      .then((dirents) =>
+        dirents
+          .filter((dirent) => dirent.isFile())
+          .map(({ name }) => path.join(dirPath, name)),
+      );
   }
+};
+...
+  const myApi = new MyApiServer(win);
+
+  registerIpcMainHandler<MyAPI>('my-api', myApi);
+```
+
+* src/App.tsx
+```tsx
+const { myAPI } = window;
+
+function App() {
+  const [files, setFiles] = useState<string[]>([]);
+  const [buttonBusy, setButtonBusy] = useState(false);
+
+  return (
+    <div className="App">
+      <header className="App-header">
+         ...
+        <button disabled={buttonBusy} onClick={async () => {
+          setButtonBusy(true);
+          const files = await myAPI.openDialog();
+          if (Array.isArray(files)) {
+            setFiles(files);
+          } else {
+            setFiles([]);
+          }
+          setButtonBusy(false);
+        }} data-testid="open-dialog">open dialog</button>
+        <ul>
+          {files.map((file, index) => (
+            <li key={file} data-testid={`file${index}`}>{file}</li>
+          ))}
+        </ul>
+      </header>
+    </div>
+  );
+}
+```
+
+* src/App.test.tsx
+```typescript
+import { myAPI } from './mock/myAPI';
+
+test('open files when button clicked', async () => {
+  myAPI.openDialog.mockResolvedValue(['file1.txt', 'file2.txt']);
+  render(<App />);
+
+  const button = screen.getByTestId('open-dialog');
+  expect(button).toBeInTheDocument();
+  expect(button.innerHTML).toBe('open dialog');
+
+  expect(button).toBeEnabled();
+  fireEvent.click(button);
+  expect(button).toBeDisabled();
+
+  await waitFor(() => screen.getByTestId('file0'));
+
+  expect(myAPI.openDialog).toHaveBeenCalled();
+
+  expect(screen.getByTestId('file0')).toHaveTextContent('file1.txt');
+  expect(screen.getByTestId('file1')).toHaveTextContent('file2.txt');
+  expect(screen.queryByTestId('file2')).toBeNull();
 });
 ```
 
-### Adjust package.json
+## Added/modified files
+* electron/
+    * @types/
+        * global.d.ts - declare `myAPI` object in global `window` object
+        * MyAPI.d.ts - declaration of `MyAPI`
+    * main.ts - `MyAPIServer` to implement `MyAPI`
+    * preload.ts - exposeInMainWorld MyAPI
+    * MyAPITemplate.ts - used by `IpxProxy` and mocks
+* src/
+    * mock/my
+        * API.ts - test mock for `MyAPI`
+    * App.tsx - add usage of `MyAPI.openDialog`
+    * App.test.tsx - add tests for above
+    * createProxyObjectFromTemplate.ts - used by `IpcProxy` and mocks
+    * createProxyObjectFromTemplate.test.ts
 
-#### Add properties for Electron
-
-```json
-  "homepage": ".", # see https://create-react-app.dev/docs/deployment#serving-the-same-build-from-different-paths
-  "main": "build/electron/main.js",
-```
-
-#### Add properties for Electron Builder
-
-```json
-  "author": "Your Name",
-  "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
-  ...
-  "build": {
-    "extends": null, # see https://github.com/electron-userland/electron-builder/issues/2030#issuecomment-386720420
-    "files": [
-      "build/**/*"
-    ],
-    "directories": {
-      "buildResources": "assets" # change the resource directory from 'build' to 'assets'
-    }
-  },
-```
-
-#### Add scripts
-
-```json
-  "scripts": {
-    "postinstall": "electron-builder install-app-deps",
-    "electron:dev": "concurrently \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && tsc -p electron -w\" \"wait-on http://localhost:3000 && tsc -p electron && electron .\"",
-    "electron:build": "yarn build && tsc -p electron && electron-builder",
-```
-
-## Many thanks to the following articles!
-
-- [⚡️ From React to an Electron app ready for production](https://medium.com/@kitze/%EF%B8%8F-from-react-to-an-electron-app-ready-for-production-a0468ecb1da3)
-- [How to build an Electron app using Create React App and Electron Builder](https://www.codementor.io/randyfindley/how-to-build-an-electron-app-using-create-react-app-and-electron-builder-ss1k0sfer)
-- [Application entry file reset to default (react-cra detected and config changed incorrectly)](https://github.com/electron-userland/electron-builder/issues/2030)
-- [Serving the Same Build from Different Paths](https://create-react-app.dev/docs/deployment#serving-the-same-build-from-different-paths)
-
-## 
+## memo
+現在は MyAPITemplate で手で必要なメソッドの名前を持つダミーを並べないといけないが interface から自動生成したい。
+しかし、create-react-app だと TypeScriptに transformer などを差し込む方法が見あたらない。
