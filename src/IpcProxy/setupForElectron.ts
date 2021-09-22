@@ -1,5 +1,7 @@
+import { IpcProxyConfig } from './IpcProxyConfig';
+
 import { contextBridge, ipcMain, ipcRenderer } from "electron";
-import { createProxyObjectFromTemplate } from "../src/createProxyObjectFromTemplate";
+import { createProxyObjectFromTemplate } from "./createProxyObjectFromTemplate";
 
 /**
  * main processから呼ぶことで、ipcMainに目的のinterface Tを実装したクラスオブジェクトをハンドラとして登録する。
@@ -44,4 +46,13 @@ export function exposeInMainWorld<T>(name: string, value: T): void {
  */
 export function exposeProxyInMainWorld<T>(name: string, channel: string, mock: T): void {
   exposeInMainWorld<T>(name, createIpcRendererProxy<T>(channel, mock));
+}
+
+
+export function setupforPreload<T>(config: IpcProxyConfig<T>): void {
+  exposeProxyInMainWorld<T>(config.window, config.IpcChannel, config.template);
+}
+
+export function setupforMain<T>(config: IpcProxyConfig<T>, impl: T): void {
+  registerIpcMainHandler<T>(config.IpcChannel, impl);
 }

@@ -18,22 +18,52 @@ interface T で定義したインターフェイスを preload -> main として
 main側で定義した実装を、preload側から呼べるようになる。
 中継したメソッドの戻り値は必ずPromiseになる。
 
-### registerIpcMainHandler
-```typescript
-registerIpcMainHandler<T>(channel: string, target: T): void
-```
-* main.ts で、BrowserWindowのページをロードする前に実行すること。
-* channelとTはpreload側と一致させること。
-* targetは処理の実装をしたクラスインスタンス。
+`IpcProxyConfig<T>` オブジェクトとして設定を定義し、 `setupForMain`, `setupForPreload`, `setupForTest` にそれぞれ与えることで同じ T を扱うことができるようになる。
 
-### exposeProxyInMainWorld
+### IpcProxyConfig
 ```typescript
-exposeProxyInMainWorld<T>(name: string, channel: string, mock: T): void
-``` 
-* preload.ts で実行すること。
-* nameは global objectの `window` に登録する名前。render processからは `window`.*name* でT型のオブジェクトとして参照できるようになる。
-* channelとTはmain側と一致させること。
-* mockはTの関数を実装しただけのテンプレートとなるインスタンスを与えること。名前を抽出するだけに使っているため、中身は呼ばれない。
+import { IpcProxyConfig } from "./IpcProxy/IpcProxyConfig";
+
+type IpcProxyConfig<T> = {
+  window: string;
+  IpcChannel: string;
+  template: T;
+};
+```
+IpcProxy共通の設定を定義する。
+* T には上記 interface Tを与える。
+* `window` に global object `window` に注入する名前を定義する。
+* `IpcChannel` に main process <-> renderer process でIPC通信するときのチャンネル名を定義する。
+* `template` に、interface Tの関数をダミー実装したclassの実体を与える。
+### setupForMain
+```typescript
+import { setupForMain } from '../src/IpcProxy/setupForElectron';
+
+function setupforMain<T>(config: IpcProxyConfig<T>, impl: T): void
+```
+* main process で、BrowserWindowのページをロードする前に実行すること。
+* impl に T の実際の処理を提供するクラスのインスタンスを与える。IPCの config.IpcChannelを通して rendererプロセスから呼び出される。
+
+### setupForPreload
+```typescript
+import { setupForPreload } from '../src/IpcProxy/setupForElectron';
+
+function setupforPreload<T>(config: IpcProxyConfig<T>): void
+```
+* renderer processの preload モジュールから実行すること。
+* Tの各メソッドを IPC の config.IpcChannel を通してproxyするオブジェクトを config.window で定義した名前で global window オブジェクトに注入する。
+* rendererのページからは window.*(config.window)* という名前でアクセスできる。
+### setupForTest
+```typescript
+import { setupForTest } from './IpcProxy/setupForTest';
+
+function setupforTest<T, U>(config: IpcProxyConfig<T>, fn: (key: keyof T, fn: (...args: unknown[]) => unknown) => U): {
+  [k in keyof T]: U;
+}
+```
+* create-react-test の test内から、テストの対象より先にimportするモジュールで実行すること。
+* Tのインターフェイスのすべてのメソッドを引数 fn が返す関数で差し替えてモックにして、global window.*(config.window)* に注入することでターゲットコードからmockを呼び出すようにセットアップする。
+* 同時に、これで作ったオブジェクトをT型ではなくmock型を保持した型として返すため、テストコードからはこちらを使う事でmock関数のメソッドを使うことができる。
   
 ## Example code
 
@@ -55,24 +85,24 @@ declare global {
 }
 ```
 
-* electron/preload.ts
+* src/MyAPIConfig.ts
 ```typescript
-import { MyAPI } from "./@types/MyAPI";
-import { exposeProxyInMainWorld } from './IpcProxy';
-import { MyAPITemplate } from "./MyAPITemplate";
-
-exposeProxyInMainWorld<MyAPI>('myAPI', 'my-api', new MyAPITemplate());
-```
-
-* electron/MyAPITemplate.ts
-```typescript
-import { MyAPI } from "./@types/MyAPI";
-
-export class MyAPITemplate implements MyAPI {
+class MyAPITemplate implements MyAPI {
   private dontCallMe = new Error("don't call me");
 
   openDialog(): Promise<void> { throw this.dontCallMe; }
 }
+
+export const MyAPIConfig: IpcProxyConfig<MyAPI> = {
+  window: 'myAPI',
+  IpcChannel: 'my-api',
+  template: new MyAPITemplate(),
+}
+```
+
+* electron/preload.ts
+```typescript
+setupforPreload(MyAPIConfig);
 ```
 
 * electron/main.ts
@@ -105,8 +135,7 @@ class MyApiServer implements MyAPI {
 };
 ...
   const myApi = new MyApiServer(win);
-
-  registerIpcMainHandler<MyAPI>('my-api', myApi);
+  setupforMain(MyAPIConfig, myApi);
 ```
 
 * src/App.tsx
@@ -142,9 +171,15 @@ function App() {
 }
 ```
 
+* src/mock/myAPI.ts
+```typescript
+export const myAPI = setupforTest(MyAPIConfig, () => jest.fn());
+```
+
 * src/App.test.tsx
 ```typescript
 import { myAPI } from './mock/myAPI';
+import App from './App';
 
 test('open files when button clicked', async () => {
   myAPI.openDialog.mockResolvedValue(['file1.txt', 'file2.txt']);
@@ -174,15 +209,20 @@ test('open files when button clicked', async () => {
         * global.d.ts - declare `myAPI` object in global `window` object
         * MyAPI.d.ts - declaration of `MyAPI`
     * main.ts - `MyAPIServer` to implement `MyAPI`
-    * preload.ts - exposeInMainWorld MyAPI
+    * preload.ts - setupForPreload(MyAPIConfig)
     * MyAPITemplate.ts - used by `IpxProxy` and mocks
 * src/
+    * IpcProxy/
+        * createProxyObjectFromTemplate.ts - used by `IpcProxy` and mocks
+        * createProxyObjectFromTemplate.test.ts
+        * IpcProxyConfig.ts
+        * setupForElectron.ts
+        * setupForTest.ts
     * mock/
         * myAPI.ts - test mock for `MyAPI`
+    * MyAPIConfig.ts - IpcProxyConfig of `MyAPI`
     * App.tsx - add usage of `MyAPI.openDialog`
     * App.test.tsx - add tests for above
-    * createProxyObjectFromTemplate.ts - used by `IpcProxy` and mocks
-    * createProxyObjectFromTemplate.test.ts
 
 ## memo
 現在は MyAPITemplate で手で必要なメソッドの名前を持つダミーを並べないといけないが interface から自動生成したい。

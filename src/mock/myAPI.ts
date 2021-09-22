@@ -1,8 +1,5 @@
-import { MyAPI } from "../../electron/@types/MyAPI";
-import { MyAPITemplate } from "../../electron/MyAPITemplate";
-import { createProxyObjectFromTemplate } from "../createProxyObjectFromTemplate";
+import { setupforTest } from "../IpcProxy/setupforTest";
+import { MyAPIConfig } from "../MyAPIConfig";
 
 
-export const myAPI = createProxyObjectFromTemplate(new MyAPITemplate() as MyAPI, () => jest.fn());
-
-Object.defineProperty(window, 'myAPI', { value: myAPI });
+export const myAPI = setupforTest(MyAPIConfig, () => jest.fn());

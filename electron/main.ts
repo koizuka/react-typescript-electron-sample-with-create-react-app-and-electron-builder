@@ -3,7 +3,8 @@ import * as path from 'path';
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
 import { MyAPI } from './@types/MyAPI';
 import * as fs from 'fs';
-import { registerIpcMainHandler } from './IpcProxy';
+import { setupforMain } from '../src/IpcProxy/setupForElectron';
+import { MyAPIConfig } from '../src/MyAPIConfig';
 
 class MyApiServer implements MyAPI {
   constructor(readonly mainWindow: BrowserWindow) {
@@ -43,8 +44,7 @@ function createWindow() {
   })
 
   const myApi = new MyApiServer(win);
-
-  registerIpcMainHandler<MyAPI>('my-api', myApi);
+  setupforMain(MyAPIConfig, myApi);
 
   if (app.isPackaged) {
     // 'build/index.html'
