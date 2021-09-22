@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import * as path from 'path';
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
 import { MyAPI } from './@types/MyAPI';
@@ -44,7 +44,7 @@ function createWindow() {
   })
 
   const myApi = new MyApiServer(win);
-  setupforMain(MyAPIConfig, myApi);
+  setupforMain(MyAPIConfig, ipcMain, myApi);
 
   if (app.isPackaged) {
     // 'build/index.html'

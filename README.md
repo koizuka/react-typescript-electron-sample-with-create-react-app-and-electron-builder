@@ -39,20 +39,22 @@ IpcProxy共通の設定を定義する。
 ```typescript
 import { setupForMain } from '../src/IpcProxy/setupForElectron';
 
-function setupforMain<T>(config: IpcProxyConfig<T>, impl: T): void
+function setupforMain<T>(config: IpcProxyConfig<T>, ipcMain, impl: T): void
 ```
 * main process で、BrowserWindowのページをロードする前に実行すること。
 * impl に T の実際の処理を提供するクラスのインスタンスを与える。IPCの config.IpcChannelを通して rendererプロセスから呼び出される。
+* ipcMain には electronの ipcMain を与えること。
 
 ### setupForPreload
 ```typescript
 import { setupForPreload } from '../src/IpcProxy/setupForElectron';
 
-function setupforPreload<T>(config: IpcProxyConfig<T>): void
+function setupforPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld, ipcRenderer): void
 ```
 * renderer processの preload モジュールから実行すること。
 * Tの各メソッドを IPC の config.IpcChannel を通してproxyするオブジェクトを config.window で定義した名前で global window オブジェクトに注入する。
 * rendererのページからは window.*(config.window)* という名前でアクセスできる。
+* exposeInMainWorld には electronの contextBridge.exposeInMainWorld を、ipcRendererには electronのipcRendererを与えること。
 ### setupForTest
 ```typescript
 import { setupForTest } from './IpcProxy/setupForTest';
@@ -102,7 +104,7 @@ export const MyAPIConfig: IpcProxyConfig<MyAPI> = {
 
 * electron/preload.ts
 ```typescript
-setupforPreload(MyAPIConfig);
+setupforPreload(MyAPIConfig, contextBridge.exposeInMainWorld, ipcRenderer);
 ```
 
 * electron/main.ts
@@ -135,7 +137,7 @@ class MyApiServer implements MyAPI {
 };
 ...
   const myApi = new MyApiServer(win);
-  setupforMain(MyAPIConfig, myApi);
+  setupforMain(MyAPIConfig, ipcMain, myApi);
 ```
 
 * src/App.tsx
