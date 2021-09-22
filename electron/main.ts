@@ -6,10 +6,7 @@ import * as fs from 'fs';
 import { registerIpcMainHandler } from './IpcProxy';
 
 class MyApiServer implements MyAPI {
-  mainWindow: BrowserWindow;
-
-  constructor(mainWindow: BrowserWindow) {
-    this.mainWindow = mainWindow;
+  constructor(readonly mainWindow: BrowserWindow) {
   }
 
   async openDialog() {

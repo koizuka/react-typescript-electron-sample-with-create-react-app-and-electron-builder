@@ -55,10 +55,7 @@ export class MyAPITemplate implements MyAPI {
 * electron/main.ts
 ```typescript
 class MyApiServer implements MyAPI {
-  mainWindow: BrowserWindow;
-
-  constructor(mainWindow: BrowserWindow) {
-    this.mainWindow = mainWindow;
+  constructor(readonly mainWindow: BrowserWindow) {
   }
 
   async openDialog() {
