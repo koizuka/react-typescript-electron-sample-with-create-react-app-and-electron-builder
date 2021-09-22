@@ -12,6 +12,29 @@ MyAPI.openDialog is from https://github.com/sprout2000/electron-react-ts.
 * 簡単な定義で main processで実行する関数群を中継するオブジェクトを global `window` などに注入できるようにする IpcProxy を追加。テスト用のmockも提供する。デモ用に `MyAPI.openDialog` を定義。
 * use npm-run-all in `yarn electron:dev`.
 
+## API in IpcProxy
+
+interface T で定義したインターフェイスを preload -> main としてIPCで中継する仕組みを提供する。
+main側で定義した実装を、preload側から呼べるようになる。
+中継したメソッドの戻り値は必ずPromiseになる。
+
+### registerIpcMainHandler
+```typescript
+registerIpcMainHandler<T>(channel: string, target: T): void
+```
+* main.ts で、BrowserWindowのページをロードする前に実行すること。
+* channelとTはpreload側と一致させること。
+* targetは処理の実装をしたクラスインスタンス。
+
+### exposeProxyInMainWorld
+```typescript
+exposeProxyInMainWorld<T>(name: string, channel: string, mock: T): void
+``` 
+* preload.ts で実行すること。
+* nameは global objectの `window` に登録する名前。render processからは `window`.*name* でT型のオブジェクトとして参照できるようになる。
+* channelとTはmain側と一致させること。
+* mockはTの関数を実装しただけのテンプレートとなるインスタンスを与えること。名前を抽出するだけに使っているため、中身は呼ばれない。
+  
 ## Example code
 
 * electron/@types/MyAPI.d.ts
