@@ -177,8 +177,8 @@ test('open files when button clicked', async () => {
     * preload.ts - exposeInMainWorld MyAPI
     * MyAPITemplate.ts - used by `IpxProxy` and mocks
 * src/
-    * mock/my
-        * API.ts - test mock for `MyAPI`
+    * mock/
+        * myAPI.ts - test mock for `MyAPI`
     * App.tsx - add usage of `MyAPI.openDialog`
     * App.test.tsx - add tests for above
     * createProxyObjectFromTemplate.ts - used by `IpcProxy` and mocks
