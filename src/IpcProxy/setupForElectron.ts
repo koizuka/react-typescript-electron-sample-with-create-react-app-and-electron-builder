@@ -1,9 +1,7 @@
 import { IpcProxyConfig } from './IpcProxyConfig';
-
 import { createProxyObjectFromTemplate } from "./createProxyObjectFromTemplate";
 
 type IpcMain = { handle: (channel: string, fn: (event: unknown, name: string, ...args: unknown[]) => unknown) => void }
-
 type IpcRenderer = { invoke: (channel: string, ...args: unknown[]) => Promise<unknown> }
 
 /**
@@ -32,10 +30,10 @@ function createIpcRendererProxy<T>(ipcRenderer: IpcRenderer, channel: string, fr
   return createProxyObjectFromTemplate<T, unknown>(from, (cur) => (...args: unknown[]) => ipcRenderer.invoke(channel, cur, ...args)) as T;
 }
 
-export function setupforPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld: (apiKey: string, value: T) => void, ipcRenderer: IpcRenderer): void {
+export function setupForPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld: (apiKey: string, value: T) => void, ipcRenderer: IpcRenderer): void {
   exposeInMainWorld(config.window, createIpcRendererProxy<T>(ipcRenderer, config.IpcChannel, config.template));
 }
 
-export function setupforMain<T>(config: IpcProxyConfig<T>, ipcMain: IpcMain, impl: T): void {
+export function setupForMain<T>(config: IpcProxyConfig<T>, ipcMain: IpcMain, impl: T): void {
   registerIpcMainHandler<T>(ipcMain, config.IpcChannel, impl);
 }

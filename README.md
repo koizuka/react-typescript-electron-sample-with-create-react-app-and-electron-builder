@@ -39,7 +39,7 @@ IpcProxy共通の設定を定義する。
 ```typescript
 import { setupForMain } from '../src/IpcProxy/setupForElectron';
 
-function setupforMain<T>(config: IpcProxyConfig<T>, ipcMain, impl: T): void
+function setupForMain<T>(config: IpcProxyConfig<T>, ipcMain, impl: T): void
 ```
 * main process で、BrowserWindowのページをロードする前に実行すること。
 * impl に T の実際の処理を提供するクラスのインスタンスを与える。IPCの config.IpcChannelを通して rendererプロセスから呼び出される。
@@ -49,7 +49,7 @@ function setupforMain<T>(config: IpcProxyConfig<T>, ipcMain, impl: T): void
 ```typescript
 import { setupForPreload } from '../src/IpcProxy/setupForElectron';
 
-function setupforPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld, ipcRenderer): void
+function setupForPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld, ipcRenderer): void
 ```
 * renderer processの preload モジュールから実行すること。
 * Tの各メソッドを IPC の config.IpcChannel を通してproxyするオブジェクトを config.window で定義した名前で global window オブジェクトに注入する。
@@ -59,7 +59,7 @@ function setupforPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld, ipcRen
 ```typescript
 import { setupForTest } from './IpcProxy/setupForTest';
 
-function setupforTest<T, U>(config: IpcProxyConfig<T>, fn: (key: keyof T, fn: (...args: unknown[]) => unknown) => U): {
+function setupForTest<T, U>(config: IpcProxyConfig<T>, fn: (key: keyof T, fn: (...args: unknown[]) => unknown) => U): {
   [k in keyof T]: U;
 }
 ```
@@ -104,7 +104,7 @@ export const MyAPIConfig: IpcProxyConfig<MyAPI> = {
 
 * electron/preload.ts
 ```typescript
-setupforPreload(MyAPIConfig, contextBridge.exposeInMainWorld, ipcRenderer);
+setupForPreload(MyAPIConfig, contextBridge.exposeInMainWorld, ipcRenderer);
 ```
 
 * electron/main.ts
@@ -137,7 +137,7 @@ class MyApiServer implements MyAPI {
 };
 ...
   const myApi = new MyApiServer(win);
-  setupforMain(MyAPIConfig, ipcMain, myApi);
+  setupForMain(MyAPIConfig, ipcMain, myApi);
 ```
 
 * src/App.tsx
@@ -175,7 +175,7 @@ function App() {
 
 * src/mock/myAPI.ts
 ```typescript
-export const myAPI = setupforTest(MyAPIConfig, () => jest.fn());
+export const myAPI = setupForTest(MyAPIConfig, () => jest.fn());
 ```
 
 * src/App.test.tsx
