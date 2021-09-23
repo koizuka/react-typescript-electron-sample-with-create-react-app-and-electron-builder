@@ -1,4 +1,4 @@
-import { setupForTest } from "../IpcProxy/setupforTest";
+import { setupForTest } from "../IpcProxy";
 import { MyAPIConfig } from "../MyAPIConfig";
 
 

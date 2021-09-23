@@ -1,5 +1,5 @@
 import { MyAPI } from "../electron/@types/MyAPI";
-import { IpcProxyConfig } from "./IpcProxy/IpcProxyConfig";
+import { IpcProxyConfig } from "./IpcProxy";
 
 // TODO このダミー宣言なしで interfaceから直接生成できないかなぁ
 

@@ -22,7 +22,7 @@ main側で定義した実装を、preload側から呼べるようになる。
 
 ### IpcProxyConfig
 ```typescript
-import { IpcProxyConfig } from "./IpcProxy/IpcProxyConfig";
+import { IpcProxyConfig } from "./IpcProxy";
 
 type IpcProxyConfig<T> = {
   window: string;
@@ -37,7 +37,7 @@ IpcProxy共通の設定を定義する。
 * `template` に、interface Tの関数をダミー実装したclassの実体を与える。
 ### setupForMain
 ```typescript
-import { setupForMain } from '../src/IpcProxy/setupForElectron';
+import { setupForMain } from '../src/IpcProxy';
 
 function setupForMain<T>(config: IpcProxyConfig<T>, ipcMain, impl: T): void
 ```
@@ -47,7 +47,7 @@ function setupForMain<T>(config: IpcProxyConfig<T>, ipcMain, impl: T): void
 
 ### setupForPreload
 ```typescript
-import { setupForPreload } from '../src/IpcProxy/setupForElectron';
+import { setupForPreload } from '../src/IpcProxy';
 
 function setupForPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld, ipcRenderer): void
 ```
@@ -57,7 +57,7 @@ function setupForPreload<T>(config: IpcProxyConfig<T>, exposeInMainWorld, ipcRen
 * exposeInMainWorld には electronの contextBridge.exposeInMainWorld を、ipcRendererには electronのipcRendererを与えること。
 ### setupForTest
 ```typescript
-import { setupForTest } from './IpcProxy/setupForTest';
+import { setupForTest } from './IpcProxy';
 
 function setupForTest<T, U>(config: IpcProxyConfig<T>, fn: (key: keyof T, fn: (...args: unknown[]) => unknown) => U): {
   [k in keyof T]: U;
@@ -218,8 +218,9 @@ test('open files when button clicked', async () => {
         * createProxyObjectFromTemplate.ts - used by `IpcProxy` and mocks
         * createProxyObjectFromTemplate.test.ts
         * IpcProxyConfig.ts
-        * setupForElectron.ts
-        * setupForTest.ts
+        * forElectron.ts
+        * forTest.ts
+        * index.ts
     * mock/
         * myAPI.ts - test mock for `MyAPI`
     * MyAPIConfig.ts - IpcProxyConfig of `MyAPI`

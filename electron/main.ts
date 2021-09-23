@@ -3,7 +3,7 @@ import * as path from 'path';
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
 import { MyAPI } from './@types/MyAPI';
 import * as fs from 'fs';
-import { setupForMain } from '../src/IpcProxy/setupForElectron';
+import { setupForMain } from '../src/IpcProxy';
 import { MyAPIConfig } from '../src/MyAPIConfig';
 
 class MyApiServer implements MyAPI {
