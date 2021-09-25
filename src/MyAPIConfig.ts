@@ -6,7 +6,7 @@ import { IpcProxyConfig } from "./IpcProxy";
 class MyAPITemplate implements MyAPI {
   private dontCallMe = new Error("don't call me");
 
-  openDialog(): Promise<void> { throw this.dontCallMe; }
+  openDialog(): Promise<never> { throw this.dontCallMe; }
 }
 
 export const MyAPIConfig: IpcProxyConfig<MyAPI> = {

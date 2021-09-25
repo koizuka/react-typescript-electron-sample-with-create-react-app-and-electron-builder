@@ -5,8 +5,8 @@ import { IpcProxyConfig } from './IpcProxyConfig';
 export function setupForTest<T, U>(config: IpcProxyConfig<T>, fn: (key: keyof T, fn: (...args: unknown[]) => unknown) => U): {
   [k in keyof T]: U;
 } {
-  const myAPI = createProxyObjectFromTemplate(config.template, fn);
+  const mock = createProxyObjectFromTemplate(config.template, fn);
 
-  Object.defineProperty(window, config.window, { value: myAPI });
-  return myAPI;
+  Object.defineProperty(window, config.window, { value: mock });
+  return mock;
 }
