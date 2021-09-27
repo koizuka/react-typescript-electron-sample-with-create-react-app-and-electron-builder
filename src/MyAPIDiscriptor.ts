@@ -1,5 +1,5 @@
 import { MyAPI } from "../electron/@types/MyAPI";
-import { IpcProxyConfig } from "./IpcProxy";
+import { IpcProxyDiscriptor } from "electron-testable-ipc-proxy";
 
 // TODO このダミー宣言なしで interfaceから直接生成できないかなぁ
 
@@ -9,7 +9,7 @@ class MyAPITemplate implements MyAPI {
   openDialog(): Promise<never> { throw this.dontCallMe; }
 }
 
-export const MyAPIConfig: IpcProxyConfig<MyAPI> = {
+export const MyAPIDiscriptor: IpcProxyDiscriptor<MyAPI> = {
   window: 'myAPI',
   IpcChannel: 'my-api',
   template: new MyAPITemplate(),

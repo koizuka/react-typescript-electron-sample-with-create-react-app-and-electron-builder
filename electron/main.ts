@@ -3,8 +3,8 @@ import * as path from 'path';
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
 import { MyAPI } from './@types/MyAPI';
 import * as fs from 'fs';
-import { setupForMain } from '../src/IpcProxy';
-import { MyAPIConfig } from '../src/MyAPIConfig';
+import { setupForMain } from 'electron-testable-ipc-proxy';
+import { MyAPIDiscriptor } from '../src/MyAPIDiscriptor';
 
 class MyApiServer implements MyAPI {
   constructor(readonly mainWindow: BrowserWindow) {
@@ -44,7 +44,7 @@ function createWindow() {
   })
 
   const myApi = new MyApiServer(win);
-  setupForMain(MyAPIConfig, ipcMain, myApi);
+  setupForMain(MyAPIDiscriptor, ipcMain, myApi);
 
   if (app.isPackaged) {
     // 'build/index.html'
