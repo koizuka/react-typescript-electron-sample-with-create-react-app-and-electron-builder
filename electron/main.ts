@@ -4,7 +4,7 @@ import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-insta
 import { MyAPI } from './@types/MyAPI';
 import * as fs from 'fs';
 import { setupForMain } from 'electron-testable-ipc-proxy';
-import { MyAPIDiscriptor } from '../src/MyAPIDiscriptor';
+import { MyAPIDescriptor } from '../src/MyAPIDescriptor';
 
 class MyApiServer implements MyAPI {
   constructor(readonly mainWindow: BrowserWindow) {
@@ -44,7 +44,7 @@ function createWindow() {
   })
 
   const myApi = new MyApiServer(win);
-  setupForMain(MyAPIDiscriptor, ipcMain, myApi);
+  setupForMain(MyAPIDescriptor, ipcMain, myApi);
 
   if (app.isPackaged) {
     // 'build/index.html'

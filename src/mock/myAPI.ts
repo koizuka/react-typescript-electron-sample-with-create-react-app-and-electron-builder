@@ -1,5 +1,5 @@
 import { setupForTest } from "electron-testable-ipc-proxy";
-import { MyAPIDiscriptor } from "../MyAPIDiscriptor";
+import { MyAPIDescriptor } from "../MyAPIDescriptor";
 
 
-export const myAPI = setupForTest(MyAPIDiscriptor, () => jest.fn());
+export const myAPI = setupForTest(MyAPIDescriptor, () => jest.fn());
