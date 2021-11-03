@@ -4933,10 +4933,10 @@ electron-reload@^1.5.0:
   dependencies:
     chokidar "^3.0.2"
 
-electron-testable-ipc-proxy@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.npmjs.org/electron-testable-ipc-proxy/-/electron-testable-ipc-proxy-0.1.1.tgz#8e21d857ac0b064b3a15d37e5d8e06e47b59d9fc"
-  integrity sha512-NtS1AXc6QJSFPANE4n/+x5xB4SrYbIrEFbOWdubm5weIESdKFZAOQ6GXbqKeweqjXS/A7MeKhucwUorHV5eAiQ==
+electron-testable-ipc-proxy@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.npmjs.org/electron-testable-ipc-proxy/-/electron-testable-ipc-proxy-0.1.2.tgz#1f28f18934d4c328359aacdcf8a11d21cb1c5107"
+  integrity sha512-3yVGCMm4dq2LfABkLiD33ZnoroShgi4Xm0+vIEj9bT/uidzjmGIg20IKZTth6hYamtnT0RfIc/p20mf6l8M+DA==
   dependencies:
     "@rollup/plugin-babel" "^5.3.0"
     rollup "^2.57.0"
